@@ -1,0 +1,199 @@
+<div class="timesheet-list-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h2>📋 My Timesheets</h2>
+      <p>View and manage your timesheet submissions</p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/timesheets/new" class="btn-primary"> ➕ New Timesheet </a>
+      <button class="btn-secondary" (click)="timesheetService.exportToExcel()">
+        📊 Export All
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label>Filter by Status:</label>
+      <select
+        [(ngModel)]="filterStatus"
+        (change)="onFilterChange()"
+        class="form-control"
+      >
+        <option value="all">All Timesheets</option>
+        <option value="draft">Draft</option>
+        <option value="submitted">Submitted</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Search:</label>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="onFilterChange()"
+        class="form-control"
+        placeholder="Search by week..."
+      />
+    </div>
+
+    <div class="results-count">
+      Showing {{ filteredTimesheets.length }} of
+      {{ timesheets.length }} timesheets
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading your timesheets...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && filteredTimesheets.length === 0" class="empty-state">
+    <div class="empty-icon">📋</div>
+    <h3>No Timesheets Found</h3>
+    <p *ngIf="timesheets.length === 0">
+      You haven't created any timesheets yet.
+    </p>
+    <p *ngIf="timesheets.length > 0">No timesheets match your filters.</p>
+    <a routerLink="/timesheets/new" class="btn-primary">
+      Create Your First Timesheet
+    </a>
+  </div>
+
+  <!-- Timesheets Grid -->
+  <div
+    *ngIf="!loading && filteredTimesheets.length > 0"
+    class="timesheets-grid"
+  >
+    <div *ngFor="let timesheet of filteredTimesheets" class="timesheet-card">
+      <div class="card-header">
+        <div class="week-info">
+          <h3>{{ getWeekDisplay(timesheet) }}</h3>
+          <p class="submitted-date" *ngIf="timesheet.submittedAt">
+            Submitted: {{ timesheet.submittedAt | date : "MMM d, y" }}
+          </p>
+        </div>
+        <div
+          class="status-badge"
+          [ngClass]="getStatusBadgeClass(timesheet.status)"
+        >
+          {{ getStatusIcon(timesheet.status) }}
+          {{ timesheet.status | uppercase }}
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Hours Summary -->
+        <div class="hours-summary">
+          <div class="hours-display">
+            <div class="hours-number">{{ timesheet.totalHours }}</div>
+            <div class="hours-label">Total Hours</div>
+          </div>
+          <div class="hours-progress">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                [style.width.%]="getProgressWidth(timesheet)"
+                [style.background-color]="getProgressColor(timesheet)"
+              ></div>
+            </div>
+            <div class="progress-label">
+              {{ timesheet.entries.length }} entries
+            </div>
+          </div>
+        </div>
+
+        <!-- Entry Preview -->
+        <div class="entry-preview">
+          <h4>Recent Entries:</h4>
+          <div class="entry-list">
+            <div
+              *ngFor="let entry of timesheet.entries.slice(0, 3)"
+              class="entry-item"
+            >
+              <span class="entry-date">{{ entry.date | date : "MMM d" }}</span>
+              <span class="entry-project">{{ entry.projectName }}</span>
+              <span class="entry-hours">{{ entry.hours }}h</span>
+            </div>
+            <div *ngIf="timesheet.entries.length > 3" class="more-entries">
+              +{{ timesheet.entries.length - 3 }} more entries
+            </div>
+          </div>
+        </div>
+
+        <!-- Rejection Reason -->
+        <div
+          *ngIf="timesheet.status === 'rejected' && timesheet.rejectionReason"
+          class="rejection-reason"
+        >
+          <strong>❌ Rejection Reason:</strong>
+          <p>{{ timesheet.rejectionReason }}</p>
+        </div>
+
+        <!-- Reviewed Info -->
+        <div
+          *ngIf="timesheet.reviewedBy && timesheet.reviewedAt"
+          class="reviewed-info"
+        >
+          <small>
+            Reviewed by {{ timesheet.reviewedBy.name }} on
+            {{ timesheet.reviewedAt | date : "MMM d, y" }}
+          </small>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <button
+          class="btn-icon"
+          (click)="exportTimesheet(timesheet._id)"
+          title="Export PDF"
+        >
+          📄 PDF
+        </button>
+        <a
+          [routerLink]="['/timesheets', timesheet._id]"
+          class="btn-icon"
+          title="View Details"
+        >
+          👁️ View
+        </a>
+        <button
+          *ngIf="timesheet.status === 'draft'"
+          class="btn-icon"
+          (click)="deleteTimesheet(timesheet._id)"
+          title="Delete"
+        >
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Summary -->
+  <div *ngIf="!loading && timesheets.length > 0" class="summary-stats">
+    <div class="stat-item">
+      <div class="stat-value">{{ getTotalTimesheets() }}</div>
+      <div class="stat-label">Total Timesheets</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-value">{{ getTotalHours() }}</div>
+      <div class="stat-label">Total Hours</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-value">{{ getApprovedCount() }}</div>
+      <div class="stat-label">Approved</div>
+    </div>
+
+    <div class="stat-item">
+      <div class="stat-value">{{ getSubmittedCount() }}</div>
+      <div class="stat-label">Pending</div>
+    </div>
+  </div>
+</div>

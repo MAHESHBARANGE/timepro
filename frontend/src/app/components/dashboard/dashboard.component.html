@@ -1,0 +1,107 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h2>Welcome back, {{ currentUser?.name }}!</h2>
+    <p class="role-badge">{{ currentUser?.role | uppercase }}</p>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading dashboard...</div>
+
+  <div *ngIf="!loading" class="dashboard-content">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-info">
+          <h3>{{ stats?.totalTimesheets || 0 }}</h3>
+          <p>Total Timesheets</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-info">
+          <h3>{{ stats?.totalHours || 0 }}</h3>
+          <p>Total Hours</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-info">
+          <h3>{{ stats?.avgHoursPerWeek || 0 }}</h3>
+          <p>Avg Hours/Week</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <h3>{{ stats?.statusCounts?.approved ?? 0 }}</h3>
+          <p>Approved</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Timesheet Status Distribution</h3>
+        <canvas
+          *ngIf="statusChartData"
+          baseChart
+          [data]="statusChartData"
+          [options]="statusChartOptions"
+          type="pie"
+        >
+        </canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3>Weekly Hours Trend</h3>
+        <canvas
+          *ngIf="trendChartData"
+          baseChart
+          [data]="trendChartData"
+          [options]="trendChartOptions"
+          type="line"
+        >
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Recent Timesheets -->
+    <div class="recent-timesheets">
+      <h3>Recent Timesheets</h3>
+      <div class="timesheets-list">
+        <div *ngFor="let timesheet of recentTimesheets" class="timesheet-item">
+          <div class="timesheet-date">
+            {{ timesheet.weekStartDate | date : "MMM d" }} -
+            {{ timesheet.weekEndDate | date : "MMM d" }}
+          </div>
+          <div class="timesheet-hours">{{ timesheet.totalHours }} hours</div>
+          <div
+            class="timesheet-status"
+            [ngClass]="getStatusBadgeClass(timesheet.status)"
+          >
+            {{ timesheet.status }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <a routerLink="/timesheets/new" class="action-btn primary">
+        ➕ New Timesheet
+      </a>
+      <a routerLink="/timesheets" class="action-btn secondary"> 📋 View All </a>
+      <a
+        *ngIf="authService.hasRole(['admin', 'manager'])"
+        routerLink="/analytics"
+        class="action-btn accent"
+      >
+        🔥 Analytics
+      </a>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,92 @@
+<div class="analytics-container">
+  <div class="header">
+    <h2>🔥 AI-Powered Productivity Analytics</h2>
+    <div class="controls">
+      <label>Analysis Period:</label>
+      <select [(ngModel)]="weeks" (change)="onWeeksChange()">
+        <option [value]="2">Last 2 weeks</option>
+        <option [value]="4">Last 4 weeks</option>
+        <option [value]="8">Last 8 weeks</option>
+        <option [value]="12">Last 12 weeks</option>
+      </select>
+      <button class="btn-export" (click)="exportReport()" *ngIf="overworkedEmployees.length > 0">
+        Export Report
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Analyzing employee workload patterns...</p>
+  </div>
+
+  <div *ngIf="!loading && overworkedEmployees.length === 0" class="no-data">
+    <div class="icon">✅</div>
+    <h3>All employees are within healthy work hours</h3>
+    <p>No overworked employees detected in the last {{ weeks }} weeks</p>
+  </div>
+
+  <div *ngIf="!loading && overworkedEmployees.length > 0" class="results">
+    <div class="summary">
+      <h3>{{ overworkedEmployees.length }} Employee(s) Need Attention</h3>
+      <p>Based on {{ weeks }} weeks of timesheet data</p>
+    </div>
+
+    <div class="employee-cards">
+      <div *ngFor="let emp of overworkedEmployees" 
+           class="employee-card" 
+           [style.border-left-color]="getRiskColor(emp.risk)">
+        
+        <div class="card-header">
+          <div class="employee-info">
+            <h4>{{ emp.user.name }}</h4>
+            <p>{{ emp.user.department }}</p>
+          </div>
+          <div class="risk-badge" [style.background-color]="getRiskColor(emp.risk)">
+            {{ getRiskIcon(emp.risk) }} {{ emp.risk | uppercase }}
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-value">{{ emp.avgHoursPerWeek }}</div>
+            <div class="metric-label">Avg Hours/Week</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">{{ emp.totalHours }}</div>
+            <div class="metric-label">Total Hours</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">{{ emp.maxWeekHours }}</div>
+            <div class="metric-label">Max Week</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">{{ emp.weekCount }}</div>
+            <div class="metric-label">Weeks</div>
+          </div>
+        </div>
+
+        <div class="suggestions">
+          <h5>🤖 AI Recommendations:</h5>
+          <ul>
+            <li *ngFor="let suggestion of emp.suggestions">{{ suggestion }}</li>
+          </ul>
+        </div>
+
+        <div class="weekly-breakdown">
+          <h5>Weekly Breakdown:</h5>
+          <div class="weeks">
+            <div *ngFor="let week of emp.weeksAnalyzed" class="week-bar">
+              <div class="bar" 
+                   [style.height]="(week.hours / emp.maxWeekHours * 100) + '%'"
+                   [style.background-color]="week.hours > 50 ? getRiskColor('high') : '#667eea'"
+                   [title]="week.hours + ' hours'">
+              </div>
+              <div class="week-date">{{ week.weekStart | date:'MM/dd' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

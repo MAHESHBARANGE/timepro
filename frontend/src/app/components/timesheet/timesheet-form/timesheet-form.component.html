@@ -1,0 +1,113 @@
+<div class="timesheet-form-container">
+  <div class="form-header">
+    <h2>📝 Weekly Timesheet</h2>
+    <div class="week-navigation">
+      <button type="button" class="btn-nav" (click)="previousWeek()">
+        ← Previous
+      </button>
+      <span class="week-label">
+        {{ currentWeekStart | date : "MMM d" }} -
+        {{ currentWeekEnd | date : "MMM d, y" }}
+      </span>
+
+      <button type="button" class="btn-nav" (click)="nextWeek()">Next →</button>
+    </div>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+
+  <form [formGroup]="timesheetForm" (ngSubmit)="onSubmit()">
+    <div class="timesheet-table">
+      <div class="table-header">
+        <div class="col-date">Date</div>
+        <div class="col-hours">Hours</div>
+        <div class="col-project">Project</div>
+        <div class="col-task">Task Description</div>
+        <div class="col-status">Status</div>
+      </div>
+
+      <div formArrayName="entries" class="table-body">
+        <div
+          *ngFor="let entry of entries.controls; let i = index"
+          [formGroupName]="i"
+          class="table-row"
+          [class.weekend]="isWeekend(weekDates[i])"
+          [class.disabled]="entry.get('date')?.disabled"
+        >
+          <div class="col-date">
+            <strong>{{ getDayName(weekDates[i]) }}</strong>
+            <span>{{ getDateString(weekDates[i]) }}</span>
+          </div>
+
+          <div class="col-hours">
+            <input
+              type="number"
+              formControlName="hours"
+              class="form-control"
+              min="0"
+              max="24"
+              step="0.5"
+            />
+          </div>
+
+          <div class="col-project">
+            <input
+              type="text"
+              formControlName="projectName"
+              class="form-control"
+              placeholder="Project name"
+            />
+          </div>
+
+          <div class="col-task">
+            <input
+              type="text"
+              formControlName="taskDescription"
+              class="form-control"
+              placeholder="Task description"
+            />
+          </div>
+
+          <div class="col-status">
+            <select formControlName="status" class="form-control">
+              <option value="completed">Completed</option>
+              <option value="in-progress">In Progress</option>
+              <option value="blocked">Blocked</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-footer">
+        <div class="total-hours">
+          <strong>Total Hours:</strong> {{ getTotalHours() }}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="goBack()">
+        Cancel
+      </button>
+
+      <button
+        type="submit"
+        class="btn-primary"
+        [disabled]="loading || timesheetForm.invalid"
+      >
+        {{ loading ? "Saving..." : "Save Draft" }}
+      </button>
+      <button
+        type="button"
+        class="btn-success"
+        (click)="onSubmitForApproval()"
+        [disabled]="loading || timesheetForm.invalid"
+      >
+        Submit for Approval
+      </button>
+    </div>
+  </form>
+</div>

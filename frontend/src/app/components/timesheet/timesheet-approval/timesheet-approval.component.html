@@ -1,0 +1,243 @@
+<div class="approval-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h2>✅ Timesheet Approvals</h2>
+      <p>Review and approve team member timesheets</p>
+    </div>
+    <div class="pending-count" *ngIf="!loading">
+      <span class="count-badge">{{ pendingTimesheets.length }}</span>
+      Pending Approvals
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading pending timesheets...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && pendingTimesheets.length === 0" class="empty-state">
+    <div class="empty-icon">✅</div>
+    <h3>All Caught Up!</h3>
+    <p>There are no pending timesheets to review at the moment.</p>
+  </div>
+
+  <!-- Pending Timesheets -->
+  <div *ngIf="!loading && pendingTimesheets.length > 0" class="approvals-list">
+    <div *ngFor="let timesheet of pendingTimesheets" class="approval-card">
+      <div class="card-header">
+        <div class="employee-info">
+          <div class="employee-avatar">
+            {{ timesheet.userId.name.charAt(0).toUpperCase() }}
+          </div>
+          <div class="employee-details">
+            <h3>{{ timesheet.userId.name }}</h3>
+            <p class="employee-meta">
+              {{ timesheet.userId.department }} • {{ timesheet.userId.email }}
+            </p>
+          </div>
+        </div>
+        <div class="week-badge">📅 {{ getWeekDisplay(timesheet) }}</div>
+      </div>
+
+      <div class="card-body">
+        <!-- Hours Summary -->
+        <div class="hours-summary">
+          <div class="summary-item primary">
+            <div class="summary-icon">⏱️</div>
+            <div class="summary-content">
+              <div class="summary-value">{{ timesheet.totalHours }}</div>
+              <div class="summary-label">Total Hours</div>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-icon">📊</div>
+            <div class="summary-content">
+              <div class="summary-value">{{ getTotalDays(timesheet) }}</div>
+              <div class="summary-label">Days Logged</div>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <div class="summary-icon">📈</div>
+            <div class="summary-content">
+              <div class="summary-value">
+                {{ getAverageHoursPerDay(timesheet) }}
+              </div>
+              <div class="summary-label">Avg Hours/Day</div>
+            </div>
+          </div>
+
+          <div class="summary-item" [class.warning]="isOverworked(timesheet)">
+            <div class="summary-icon">
+              {{ isOverworked(timesheet) ? "⚠️" : "✅" }}
+            </div>
+            <div class="summary-content">
+              <div class="summary-value">
+                {{ isOverworked(timesheet) ? "Yes" : "No" }}
+              </div>
+              <div class="summary-label">Overworked</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submitted Info -->
+        <div class="submitted-info">
+          <small>
+            📤 Submitted {{ timesheet.submittedAt | date : "MMM d, y h:mm a" }}
+          </small>
+        </div>
+
+        <!-- Entries Table -->
+        <div class="entries-section">
+          <h4>Time Entries</h4>
+          <div class="entries-table">
+            <div class="table-header">
+              <div class="col-date">Date</div>
+              <div class="col-project">Project</div>
+              <div class="col-task">Task</div>
+              <div class="col-hours">Hours</div>
+              <div class="col-status">Status</div>
+            </div>
+            <div class="table-body">
+              <div *ngFor="let entry of timesheet.entries" class="table-row">
+                <div class="col-date">
+                  {{ entry.date | date : "EEE, MMM d" }}
+                </div>
+                <div class="col-project">
+                  {{ entry.projectName }}
+                </div>
+                <div class="col-task">
+                  {{ entry.taskDescription }}
+                </div>
+                <div class="col-hours">
+                  <strong>{{ entry.hours }}h</strong>
+                </div>
+                <div class="col-status">
+                  <span
+                    class="status-badge"
+                    [ngClass]="'status-' + entry.status"
+                  >
+                    {{ entry.status }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Overwork Warning -->
+        <div *ngIf="isOverworked(timesheet)" class="overwork-warning">
+          <strong>⚠️ Warning:</strong> This employee has logged more than 50
+          hours this week. Consider discussing workload distribution.
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <button class="btn-export" (click)="exportTimesheet(timesheet._id)">
+          📄 Export PDF
+        </button>
+        <div class="action-buttons">
+          <button
+            class="btn-reject"
+            (click)="openReviewModal(timesheet, 'reject')"
+            [disabled]="processing"
+          >
+            ❌ Reject
+          </button>
+          <button
+            class="btn-approve"
+            (click)="openReviewModal(timesheet, 'approve')"
+            [disabled]="processing"
+          >
+            ✅ Approve
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div
+    *ngIf="showReviewModal"
+    class="modal-overlay"
+    (click)="closeReviewModal()"
+  >
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          {{
+            reviewAction === "approve"
+              ? "✅ Approve Timesheet"
+              : "❌ Reject Timesheet"
+          }}
+        </h3>
+        <button class="close-btn" (click)="closeReviewModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <p *ngIf="reviewAction === 'approve'" class="confirm-text">
+          Are you sure you want to approve this timesheet for
+          <strong>{{ selectedTimesheet?.userId?.name }}</strong
+          >?
+        </p>
+
+        <div *ngIf="reviewAction === 'reject'" class="rejection-form">
+          <p class="confirm-text">
+            Please provide a reason for rejecting
+            <strong>{{ selectedTimesheet?.userId?.name }}</strong
+            >'s timesheet:
+          </p>
+          <textarea
+            [(ngModel)]="rejectionReason"
+            class="rejection-textarea"
+            placeholder="Enter rejection reason..."
+            rows="4"
+          >
+          </textarea>
+        </div>
+
+        <div class="timesheet-summary">
+          <div class="summary-row">
+            <span>Week:</span>
+            <strong>{{ getWeekDisplay(selectedTimesheet) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Total Hours:</span>
+            <strong>{{ selectedTimesheet?.totalHours }}h</strong>
+          </div>
+          <div class="summary-row">
+            <span>Entries:</span>
+            <strong>{{ selectedTimesheet?.entries?.length }} days</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="btn-cancel"
+          (click)="closeReviewModal()"
+          [disabled]="processing"
+        >
+          Cancel
+        </button>
+        <button
+          class="btn-confirm"
+          [ngClass]="reviewAction === 'approve' ? 'btn-success' : 'btn-danger'"
+          (click)="confirmReview()"
+          [disabled]="processing"
+        >
+          {{
+            processing
+              ? "Processing..."
+              : reviewAction === "approve"
+              ? "Approve"
+              : "Reject"
+          }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

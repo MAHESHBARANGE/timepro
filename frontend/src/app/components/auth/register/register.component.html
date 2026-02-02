@@ -1,0 +1,175 @@
+<div class="register-container">
+  <div class="register-card">
+    <div class="logo-section">
+      <h1>⏰ TimePro</h1>
+      <p>Create Your Account</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <!-- Name -->
+      <div class="form-group">
+        <label for="name">Full Name <span class="required">*</span></label>
+        <input
+          type="text"
+          id="name"
+          formControlName="name"
+          class="form-control"
+          placeholder="John Doe"
+        />
+        <div
+          class="error"
+          *ngIf="
+            registerForm.get('name')?.invalid &&
+            registerForm.get('name')?.touched
+          "
+        >
+          <span *ngIf="registerForm.get('name')?.errors?.['required']"
+            >Name is required</span
+          >
+          <span *ngIf="registerForm.get('name')?.errors?.['minlength']"
+            >Name must be at least 3 characters</span
+          >
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email <span class="required">*</span></label>
+        <input
+          type="email"
+          id="email"
+          formControlName="email"
+          class="form-control"
+          placeholder="john@company.com"
+        />
+        <div
+          class="error"
+          *ngIf="
+            registerForm.get('email')?.invalid &&
+            registerForm.get('email')?.touched
+          "
+        >
+          Please enter a valid email address
+        </div>
+      </div>
+
+      <!-- Department -->
+      <div class="form-group">
+        <label for="department"
+          >Department <span class="required">*</span></label
+        >
+        <select
+          id="department"
+          formControlName="department"
+          class="form-control"
+        >
+          <option value="">Select Department</option>
+          <option *ngFor="let dept of departments" [value]="dept">
+            {{ dept }}
+          </option>
+        </select>
+        <div
+          class="error"
+          *ngIf="
+            registerForm.get('department')?.invalid &&
+            registerForm.get('department')?.touched
+          "
+        >
+          Please select a department
+        </div>
+      </div>
+
+      <!-- Role -->
+      <div class="form-group">
+        <label for="role">Role <span class="required">*</span></label>
+        <select id="role" formControlName="role" class="form-control">
+          <option *ngFor="let role of roles" [value]="role.value">
+            {{ role.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Manager (only for employees) -->
+      <div
+        class="form-group"
+        *ngIf="registerForm.get('role')?.value === 'employee'"
+      >
+        <label for="managerId"
+          >Reporting Manager <span class="required">*</span></label
+        >
+        <select id="managerId" formControlName="managerId" class="form-control">
+          <option value="">Select Manager</option>
+          <option *ngFor="let manager of managers" [value]="manager._id">
+            {{ manager.name }} ({{ manager.department }})
+          </option>
+        </select>
+        <div
+          class="error"
+          *ngIf="
+            registerForm.get('managerId')?.invalid &&
+            registerForm.get('managerId')?.touched
+          "
+        >
+          Please select a manager
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password">Password <span class="required">*</span></label>
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
+            class="form-control"
+            placeholder="••••••••"
+          />
+          <div
+            class="error"
+            *ngIf="
+              registerForm.get('password')?.invalid &&
+              registerForm.get('password')?.touched
+            "
+          >
+            Password must be at least 6 characters
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword"
+            >Confirm Password <span class="required">*</span></label
+          >
+          <input
+            type="password"
+            id="confirmPassword"
+            formControlName="confirmPassword"
+            class="form-control"
+            placeholder="••••••••"
+          />
+          <div class="error" *ngIf="passwordMismatch">
+            Passwords do not match
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="success-message" *ngIf="success">{{ success }}</div>
+      <div class="error-message" *ngIf="error">{{ error }}</div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="btn-primary"
+        [disabled]="loading || registerForm.invalid"
+      >
+        {{ loading ? "Creating Account..." : "Create Account" }}
+      </button>
+    </form>
+
+    <div class="login-link">
+      Already have an account?
+      <a routerLink="/login">Login here</a>
+    </div>
+  </div>
+</div>

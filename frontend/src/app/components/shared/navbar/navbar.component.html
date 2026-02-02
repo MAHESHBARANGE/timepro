@@ -1,0 +1,49 @@
+<nav class="navbar" *ngIf="currentUser">
+  <div class="navbar-container">
+    <div class="navbar-brand text-start">
+      <a routerLink="/dashboard">⏰ TimePro</a>
+    </div>
+
+    <button class="navbar-toggle" (click)="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="navbar-menu" [class.active]="isMenuOpen">
+      <div class="navbar-nav">
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+          📊 Dashboard
+        </a>
+        <a routerLink="/timesheets" routerLinkActive="active" class="nav-link">
+          📋 Timesheets
+        </a>
+        <a routerLink="/timesheets/new" routerLinkActive="active" class="nav-link">
+          ➕ New Timesheet
+        </a>
+        <a *ngIf="authService.hasRole(['admin', 'manager'])" 
+           routerLink="/timesheets/approvals" 
+           routerLinkActive="active" 
+           class="nav-link">
+          ✅ Approvals
+        </a>
+        <a *ngIf="authService.hasRole(['admin', 'manager'])" 
+           routerLink="/analytics" 
+           routerLinkActive="active" 
+           class="nav-link">
+          🔥 Analytics
+        </a>
+      </div>
+
+      <div class="navbar-user justify-content-end">
+        <div class="user-info">
+          <span class="user-name">{{ currentUser.name }}</span>
+          <span class="user-role">{{ currentUser.role }}</span>
+        </div>
+        <button class="btn-logout" (click)="logout()">
+          🚪 Logout
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
